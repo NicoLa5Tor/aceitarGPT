@@ -1,50 +1,40 @@
-from flask import Flask
-from flask_cors import CORS
 import logging
-from config import config
+from typing import Any
 
-def create_app(config_name='default'):
-    """
-    Factory function para crear la aplicación Flask
-    
-    Args:
-        config_name: Nombre de la configuración a usar
-        
-    Returns:
-        Instancia de Flask configurada
-    """
-    app = Flask(__name__)
-    app.config.from_object(config[config_name])
-    
-    # Configurar CORS
-    CORS(app, origins=["*"])
-    
-    # Configurar logging
-    configure_logging(app)
-    
-    # Registrar blueprints
-    register_blueprints(app)
-    
-    # Manejo de errores globales
-    register_error_handlers(app)
-    
-    return app
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-def configure_logging(app):
-    """Configura el sistema de logging"""
-    if not app.debug and not app.testing:
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        )
-        app.logger.setLevel(logging.INFO)
+from config import settings
+from .routes.advisor import router as advisor_router
+from .utils.error_handlers import register_error_handlers
 
-def register_blueprints(app):
-    """Registra todos los blueprints de la aplicación"""
-    from app.routes.advisor import advisor_bp
-    app.register_blueprint(advisor_bp, url_prefix='/api/v1')
 
-def register_error_handlers(app):
-    """Registra manejadores de errores globales"""
-    from app.utils.error_handlers import register_error_handlers as reg_handlers
-    reg_handlers(app)
+def configure_logging(debug: bool) -> None:
+    """Configura el sistema de logging."""
+    log_level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]",
+    )
+
+
+def create_app() -> FastAPI:
+    """Crea y configura la aplicación FastAPI."""
+    configure_logging(settings.debug)
+
+    fastapi_app = FastAPI(title=settings.app_name, version=settings.app_version)
+    fastapi_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    fastapi_app.include_router(advisor_router)
+    register_error_handlers(fastapi_app)
+
+    return fastapi_app
+
+
+app: Any = create_app()

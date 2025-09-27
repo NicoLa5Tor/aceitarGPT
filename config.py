@@ -1,42 +1,35 @@
-import os
-from dotenv import load_dotenv
+from functools import lru_cache
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Cargar variables del archivo .env
-load_dotenv()
 
-class Config:
-    """Configuración base de la aplicación"""
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-    OPENAI_URL = "https://api.openai.com/v1/chat/completions"
-    OPENAI_MODEL = os.environ.get('OPENAI_MODEL') or "gpt-3.5-turbo"
-    OPENAI_TEMPERATURE = float(os.environ.get('OPENAI_TEMPERATURE', 0.2))
-    OPENAI_TIMEOUT = int(os.environ.get('OPENAI_TIMEOUT', 30))
-    OPENAI_MAX_TOKENS = int(os.environ.get('OPENAI_MAX_TOKENS', 1000))
-    
-    # Información de la app
-    APP_NAME = os.environ.get('APP_NAME', 'Yamaha Advisor API')
-    APP_VERSION = os.environ.get('APP_VERSION', '1.0.0')
+class Settings(BaseSettings):
+    """Application configuration loaded from environment variables."""
 
-class DevelopmentConfig(Config):
-    """Configuración para desarrollo"""
-    DEBUG = True
-    TESTING = False
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-class ProductionConfig(Config):
-    """Configuración para producción"""
-    DEBUG = False
-    TESTING = False
+    environment: str = Field(default="development", alias="ENVIRONMENT")
+    debug: bool = Field(default=False, alias="DEBUG")
 
-class TestingConfig(Config):
-    """Configuración para testing"""
-    DEBUG = True
-    TESTING = True
-    OPENAI_API_KEY = "test-key"
+    app_name: str = Field(default="Yamaha Advisor API", alias="APP_NAME")
+    app_version: str = Field(default="1.0.0", alias="APP_VERSION")
 
-config = {
-    'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'testing': TestingConfig,
-    'default': DevelopmentConfig
-}
+    api_host: str = Field(default="0.0.0.0", alias="API_HOST")
+    api_port: int = Field(default=8000, alias="API_PORT")
+
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    openai_url: str = Field(default="https://api.openai.com/v1/chat/completions", alias="OPENAI_URL")
+    openai_model: str = Field(default="gpt-3.5-turbo", alias="OPENAI_MODEL")
+    openai_temperature: float = Field(default=0.2, alias="OPENAI_TEMPERATURE")
+    openai_timeout: int = Field(default=30, alias="OPENAI_TIMEOUT")
+    openai_max_tokens: int = Field(default=1000, alias="OPENAI_MAX_TOKENS")
+
+
+@lru_cache()
+def get_settings() -> "Settings":
+    """Return a cached settings instance for dependency injection."""
+
+    return Settings()
+
+
+settings = get_settings()
