@@ -1,0 +1,15 @@
+# Dependencias principales
+Flask==2.3.3
+Flask-CORS==4.0.0
+requests==2.31.0
+marshmallow==3.20.1
+
+# Para manejar variables de entorno desde archivo .env
+python-dotenv==1.0.0
+
+# Servidor de producción
+gunicorn==21.2.0
+
+# Testing (opcional)
+pytest==7.4.0
+pytest-flask==1.2.0
